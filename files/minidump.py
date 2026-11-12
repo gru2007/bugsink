@@ -8,11 +8,17 @@ from .models import get_file_metadata_for_debug_ids
 from .zip import open_zip_entry
 
 
+def debug_id_to_uuid(module_debug_id):
+    # PE modules (PDB) carry the PDB age after the UUID: "<uuid>-<age>", e.g. "e35f6221-a7e8-4769-9b74-7565f2fd9b2b-1".
+    # Debug files are stored by the UUID alone, so the age is dropped; UUID() would raise on it.
+    return UUID(symalot.normalize_debug_id(module_debug_id)[:36])
+
+
 def build_cfi_map_from_minidump_bytes(minidump_bytes, project, *, used_metadata_ids=None):
     module_ids_by_debug_id = defaultdict(set)
     for module in symalot.minidump_modules(minidump_bytes):
         if module.debug_id:
-            debug_id = UUID(symalot.normalize_debug_id(module.debug_id))
+            debug_id = debug_id_to_uuid(module.debug_id)
             module_ids_by_debug_id[debug_id].add(module.debug_id)
 
     metadata = get_file_metadata_for_debug_ids(project, module_ids_by_debug_id, "dbg", defer_file_data=True)
@@ -99,7 +105,7 @@ def event_threads_for_process_state(process_state, project, *, used_metadata_ids
 
             if module and module.debug_id:
                 if module.debug_id not in debug_ids:
-                    debug_ids[module.debug_id] = UUID(symalot.normalize_debug_id(module.debug_id))
+                    debug_ids[module.debug_id] = debug_id_to_uuid(module.debug_id)
                 debug_id = debug_ids[module.debug_id]
                 frames_by_debug_id[debug_id].append((frame, symbolic_frame.instruction - module.addr))
 

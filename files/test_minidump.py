@@ -15,11 +15,27 @@ from bugsink.test_utils import TransactionTestCase25251 as TransactionTestCase
 from projects.models import Project
 
 from .minidump import (
-    build_cfi_map_from_minidump_bytes, event_threads_for_process_state, extract_dif_kind, extract_source_context,
-    read_source_lines,
+    build_cfi_map_from_minidump_bytes, debug_id_to_uuid, event_threads_for_process_state, extract_dif_kind,
+    extract_source_context, read_source_lines,
 )
 from .models import File, FileMetadata
 from .zip import open_zip_entry
+
+
+class DebugIdTests(TestCase):
+    def test_pe_debug_id_with_pdb_age(self):
+        # PE modules carry the PDB age after the UUID; it is not part of the debug file's id.
+        self.assertEqual(
+            "e35f6221-a7e8-4769-9b74-7565f2fd9b2b",
+            str(debug_id_to_uuid("e35f6221-a7e8-4769-9b74-7565f2fd9b2b-1")))
+        self.assertEqual(
+            "893bd1f9-dbd9-4d7c-b318-f5cc0109171b",
+            str(debug_id_to_uuid("893bd1f9dbd94d7cb318f5cc0109171b5a")))
+
+    def test_debug_id_without_age(self):
+        self.assertEqual(
+            "cbb3395d-3824-43c1-9b44-c742862951e5",
+            str(debug_id_to_uuid("cbb3395d-3824-43c1-9b44-c742862951e5")))
 
 
 class DifKindTests(TestCase):
